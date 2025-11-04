@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Simple Canvas Game</title>
+<style>
+  body { margin:0; text-align:center; }
+  canvas { border:1px solid #000; display:block; margin:auto; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+const width = 320, height = 500;
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+canvas.width = width; canvas.height = height;
+
+let points = 0, state = true;
+const circles = Array.from({length:10}, () => [
+  Math.random()*width, Math.random()*height, Math.random()*100, Math.random()/2
+]);
+
+const clear = () => {
+  ctx.fillStyle = '#d0e7f9';
+  ctx.fillRect(0, 0, width, height);
+};
+
+const drawCircles = () => circles.forEach(([x,y,r,a]) => {
+  ctx.fillStyle = `rgba(255,255,255,${a})`;
+  ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
+});
+
+const moveCircles = e => circles.forEach(c => {
+  c[1] = c[1]-c[2]>height ? (c[0]=Math.random()*width,c[2]=Math.random()*100,c[1]=-c[2],c[3]=Math.random()/2,c[1]) : c[1]+e;
+});
+
+
+class Player {
+  constructor() {
+    this.img = new Image();
+    this.img.src = "angel.png";
+    this.w = 65; this.h = 95;
+    this.frames = 2; // ← スプライトの縦分割数（例: 2フレーム）
+    this.actualFrame = 0;
+    this.interval = 0;
+    this.X = (width - this.w) / 2;
+    this.Y = height - this.h;
+    this.jumpSpeed = 0; this.fallSpeed = 0;
+    this.isJumping = false; this.isFalling = false;
+  }
+
+  draw() {
+    if (!this.img.complete) return; // 画像未ロードなら描画しない
+    ctx.drawImage(
+      this.img,
+      0, this.h * this.actualFrame, this.w, this.h, // スプライト切り出し
+      this.X, this.Y, this.w, this.h
+    );
+    if (++this.interval % 4 === 0) {
+      this.actualFrame = (this.actualFrame + 1) % this.frames;
+    }
+  }
+
+ 
+  
+  jump() { if(!this.isJumping&&!this.isFalling){this.isJumping=true;this.jumpSpeed=17;} }
+  checkJump() {
+    if(this.Y>height*0.4) this.Y-=this.jumpSpeed;
+    else { if(this.jumpSpeed>10) points++; moveCircles(this.jumpSpeed*0.5);
+      platforms.forEach(p=>{p.y+=this.jumpSpeed;if(p.y>height)p.reset();});
+    }
+    if(--this.jumpSpeed<=0){this.isJumping=false;this.isFalling=true;this.fallSpeed=1;}
+  }
+  checkFall() {
+    if(this.Y<height-this.h){this.Y+=this.fallSpeed++;} else {points?gameOver():this.fallStop();}
+  }
+  fallStop(){this.isFalling=false;this.fallSpeed=0;this.jump();}
+  moveLeft(){if(this.X>0)this.X-=5;}
+  moveRight(){if(this.X+this.w<width)this.X+=5;}
+}
+const player=new Player(); player.jump();
+
+document.onmousemove=e=>e.pageX<player.X+canvas.offsetLeft?player.moveLeft():player.moveRight();
+
+const platformWidth=70, platformHeight=20;
+class Platform {
+  constructor(x,y,type){this.x=x;this.y=y;this.type=type;this.isMoving=Math.random()<0.5;this.dir=Math.random()<0.5?-1:1;}
+  draw(){const g=ctx.createRadialGradient(this.x+platformWidth/2,this.y+platformHeight/2,5,this.x+platformWidth/2,this.y+platformHeight/2,45);
+    g.addColorStop(0,this.type?'#AADD00':'#FF8C00');g.addColorStop(1,this.type?'#698B22':'#EEEE00');
+    ctx.fillStyle=g;ctx.fillRect(this.x,this.y,platformWidth,platformHeight);}
+  reset(){this.x=Math.random()*(width-platformWidth);this.y-=height;this.type=Math.random()<0.2;}
+}
+const platforms=Array.from({length:7},(_,i)=>new Platform(Math.random()*(width-platformWidth),i*(height/7),Math.random()<0.2));
+
+const checkCollision=()=>platforms.forEach(p=>{
+  if(player.isFalling&&player.X<p.x+platformWidth&&player.X+player.w>p.x&&player.Y+player.h>p.y&&player.Y+player.h<p.y+platformHeight)p.type?(player.fallStop(),player.jumpSpeed=50):player.fallStop();
+});
+
+const gameOver=()=>{state=false;ctx.fillStyle="black";ctx.font="10pt Arial";ctx.fillText(`GAME OVER`,width/2-60,height/2-50);ctx.fillText(`YOUR RESULT:${points}`,width/2-60,height/2-30);};
+
+(function loop(){
+  clear(); drawCircles();
+  if(player.isJumping)player.checkJump(); if(player.isFalling)player.checkFall();
+  player.draw();
+  platforms.forEach((p,i)=>{if(p.isMoving){p.x+=p.dir*(i/2)*~~(points/100);if(p.x<0)p.dir=1;if(p.x>width-platformWidth)p.dir=-1;}p.draw();});
+  checkCollision();
+  ctx.fillStyle="black";ctx.fillText(`POINTS:${points}`,10,height-10);
+  if(state)requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
