@@ -6,7 +6,10 @@ http://michalbe.blogspot.com/2010/09/simple-game-with-html5-canvas-part-1.html
 ---
 
 20251104
-久しぶりにレポジトリを見て、Tauriで動かしてみた。
+久しぶりにレポジトリを見て、Tauriで動かしてみた。 AIにRefactoringさせた。
+
+https://github.com/jamad/Simple-game-with-HTML5-Canvas/blob/master/index.html
 
 
 <img width="787" height="542" alt="image" src="https://github.com/user-attachments/assets/b92b220d-f3d2-496b-9ec0-87bb25a8f466" />
+
